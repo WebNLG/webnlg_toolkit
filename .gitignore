@@ -127,6 +127,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+dev_venv/
 
 # Spyder project settings
 .spyderproject
@@ -151,6 +152,13 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Dev code
+dev_src/
+
+# Metrics repos
+webnlg_toolkit/eval/metrics/bleurt/
+webnlg_toolkit/eval/metrics/meteor-1.5/
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

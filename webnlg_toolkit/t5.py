@@ -35,7 +35,7 @@ def load_model(model_ckpt, tokenizer=None, device="cuda", **kwargs):
     if model_ckpt.endswith(".ckpt"):
         model = T5Module.load_from_checkpoint(model_ckpt, **kwargs).to(device).eval()
     else:
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_ckpt, return_dict=True).to(device).eval()
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_ckpt, return_dict=True, use_safetensors=True).to(device).eval()
         tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
     
     # unpack model and accompanying components
@@ -48,6 +48,11 @@ def load_model(model_ckpt, tokenizer=None, device="cuda", **kwargs):
         model = model.model
     else:
         hparams = {p: getattr(model.config, p, None) for p in INF_PARAMS}
+        # Max length 128 by default
+        max_length = hparams.get("max_length", 128)
+        if max_length < 128:
+            hparams["max_length"] = 128
+        print(hparams)
 
     return model, tokenizer, hparams
 
@@ -71,7 +76,7 @@ def inference(model_ckpt, test_file, lang="en", out_file=None, training=False, b
         generated_ids = model.generate(
             **batch,
             use_cache=True,
-            decoder_start_token_id=None, # None is default and so will be handled internally
+            decoder_start_token_id=model.config.decoder_start_token_id, # Change, previous is None.
             num_beams=4,
             max_length=128,
             repetition_penalty=RP[lang],

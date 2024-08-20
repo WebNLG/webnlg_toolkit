@@ -5,7 +5,7 @@ pytorch-lightning==1.9.5
 torch==1.13.1
 
 bert-score==0.3.13
-nltk==3.5
+nltk==3.8.1
 pyter3==0.3
 razdel==0.5.0
 sacrebleu==2.2.0
