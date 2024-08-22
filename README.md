@@ -142,6 +142,12 @@ We have added 5 new metrics to the toolkit, offering a more comprehensive approa
 
 We have also updated **BLEURT** to the latest version (BLEURT-20) to ensure more accurate evaluations.
 
+There are some metrics that still need to be downloaded manually, please follow the instructions below to run the bash file.
+```bash
+cd webnlg_toolkit/eval
+bash install_dependencies.sh
+```
+
 Additionally, we continue to support the two evaluation methods as before.
 
 Example of Seq2seq model inference:

@@ -2,7 +2,7 @@
 name = "webnlg-toolkit"
 version = "0.1.0"
 description = "A toolkit library for WebNLG-related tasks."
-authors = ["Yifei Song"]
+authors = ["Liam Cripwell", "Yifei Song <yifei.song7@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
