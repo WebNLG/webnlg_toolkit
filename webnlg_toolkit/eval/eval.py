@@ -59,6 +59,7 @@ from parent import parent
 from webnlg_toolkit.eval.metrics.chrF import computeChrF
 from webnlg_toolkit.eval.metrics.bleurt.bleurt import score as bleurt_score
 from webnlg_toolkit.eval.metrics.SEScore2.SEScore2 import *
+from webnlg_toolkit.utils.data import to_camel, from_camel
 
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -123,10 +124,10 @@ def parse(refs_path, hyps_path, graph_path, num_refs, lng='en'):
 
     # raw graph
     if isinstance(graph_path, list):
-        pass
+        graphs = graph_path
     else:
         with codecs.open(graph_path, 'r', 'utf-8') as f:
-            graphs = [x.strip() for x in f.readlines()]
+            graphs = [eval(x.strip()) for x in f.readlines()]
 
 
     logging.info('FINISHING TO PARSE INPUTS...')
@@ -158,7 +159,10 @@ def meteor_score(references, hypothesis, num_refs, lng='en'):
     linear_references = []
     for refs in references:
         for i in range(num_refs):
-            linear_references.append(refs[i])
+            if i < len(refs):
+                linear_references.append(refs[i])
+            else:
+                linear_references.append("")
 
     with codecs.open(refs_tmp, 'w', 'utf-8') as f:
         f.write('\n'.join(linear_references))
@@ -278,21 +282,34 @@ def bert_score_(references, hypothesis, lng='en'):
 
 def bleurt(references, hypothesis, num_refs, checkpoint = "webnlg_toolkit/eval/metrics/bleurt/BLEURT-20"):
     refs, cands = [], []
+    graph_size = []
     for i, hyp in enumerate(hypothesis):
+        non_empty_ref = 0
         for ref in references[i][:num_refs]:
-            cands.append(hyp)
-            refs.append(ref)
+            if ref:
+                non_empty_ref += 1
+                cands.append(hyp)
+                refs.append(ref)
+        graph_size.append(non_empty_ref)
+
+    assert sum(graph_size) == len(refs)
 
     scorer = bleurt_score.BleurtScorer(checkpoint)
     scores = scorer.score(references=refs, candidates=cands)
-    scores = [max(scores[i:i+num_refs]) for i in range(0, len(scores), num_refs)]
+
+    index = 0
+    bleurt_scores = []
+    for nb in graph_size:
+        bleurt_scores.append(max(scores[index:index + nb]))
+        index += nb
+    assert len(bleurt_scores) == len(hypothesis)
 
     # Unload model
     del scorer
     gc.collect()
     torch.cuda.empty_cache()
 
-    return round(sum(scores) / len(scores), 3)
+    return round(sum(bleurt_scores) / len(bleurt_scores), 3)
 
 def parent_score(references, hypothesis, graphs):
     def _table(table):
@@ -300,8 +317,8 @@ def parent_score(references, hypothesis, graphs):
         def _tokenize(x):
             return nltk.word_tokenize(" ".join(x.lower().split("_")))
         # Parse triple
-        graph = [triple.split(" | ") for triple in eval(table)]
-        return [[relation, _tokenize(head) + _tokenize(value)]
+        graph = [triple.split(" | ") for triple in table]
+        return [[to_camel(from_camel(relation)), _tokenize(head.strip('\"')) + _tokenize(value.strip('\"'))]
                 for (head, relation, value) in graph]
     
     def _text(x):
@@ -309,7 +326,7 @@ def parent_score(references, hypothesis, graphs):
         return nltk.word_tokenize(x.lower())
 
     predictions = [_text(pred) for pred in hypothesis]
-    references = [[_text(ref) for ref in refs] for refs in references]
+    references = [[_text(ref) for ref in refs if ref] for refs in references]
     graphs = [_table(table) for table in graphs]
     
     # Compute parent score on system level
@@ -333,10 +350,13 @@ def eredat(hypothesis, graphs):
         '''
         Linearize table data into one string
         '''
-        graph = [triple.split(" | ") for triple in eval(table)]
+        graph = [triple.split(" | ") for triple in table]
         linearized_triple = ""
         for triple in graph:
             subject, predicate, object = triple
+            subject = subject.strip('\"')
+            predicate = to_camel(from_camel(predicate))
+            object = object.strip('\"')
             linearized_triple += " [S] " + subject + " [P] " + predicate + " [O] " + object
         return linearized_triple.replace("_", " ").strip()
     
@@ -382,10 +402,13 @@ def factspotter(hypothesis, graphs):
         '''
         Linearize table data into one string
         '''
-        graph = [triple.split(" | ") for triple in eval(table)]
+        graph = [triple.split(" | ") for triple in table]
         linearized_triples = []
         for triple in graph:
             subject, predicate, object = triple
+            subject = subject.strip('\"')
+            predicate = to_camel(from_camel(predicate))
+            object = object.strip('\"')
             triple_to_add = subject + ", " + predicate + ", " + object
             linearized_triples.append(triple_to_add.replace("_", " ").strip())
         return linearized_triples
@@ -456,7 +479,7 @@ def factspotter(hypothesis, graphs):
 
     return sum(factscore) / len(factscore)
 
-def sescore2(references, hypothesis, num_refs, batch_size=16, path=SESCORE2_PATH):
+def sescore2(references, hypothesis, batch_size=16, path=SESCORE2_PATH):
     # Add SEScocre2 directory into the working repo
     sys.path.append(path)
 
@@ -521,10 +544,13 @@ def DQE(hypothesis, graphs, path='webnlg_toolkit/eval/metrics/DQE'):
         '''
         Linearize table data into one string
         '''
-        graph = [triple.split(" | ") for triple in eval(table)]
+        graph = [triple.split(" | ") for triple in table]
         linearized_triples = []
         for triple in graph:
             subject, predicate, object = triple
+            subject = subject.strip('\"')
+            predicate = to_camel(from_camel(predicate))
+            object = object.strip('\"')
             linearized_triples.append((subject + " | " + predicate + " | " + object).replace("_", " ").strip())
         return linearized_triples
     
@@ -587,7 +613,7 @@ def run(refs_path, hyps_path, graph_path, num_refs, lng='en', metrics='bleu,mete
         fs = factspotter(hypothesis, graphs)
         result['factspotter'] = fs
     if 'sescore' in metrics:
-        ss = sescore2(references, hypothesis, num_refs, batch_size=16)
+        ss = sescore2(references, hypothesis, batch_size=16)
         result['sescore2'] = ss
     if 'dqe' in metrics:
         dqe = DQE(hypothesis, graphs)

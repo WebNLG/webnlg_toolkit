@@ -1,5 +1,7 @@
 import argparse
 
+import os
+import re
 import torch
 import pandas as pd
 from tqdm import tqdm
@@ -14,7 +16,7 @@ from torch.optim import AdamW # using this instead of transformers one because o
 
 from torch.utils.data import DataLoader
 
-from webnlg_toolkit.utils.data import load_webnlg_dataset
+from webnlg_toolkit.utils.data import load_webnlg_dataset, to_camel
 from webnlg_toolkit.data import RDF2TextDataModule
 from webnlg_toolkit.eval.eval import run as run_eval
 from webnlg_toolkit.eval.eval import print_results
@@ -35,7 +37,21 @@ def load_model(model_ckpt, tokenizer=None, device="cuda", **kwargs):
     if model_ckpt.endswith(".ckpt"):
         model = T5Module.load_from_checkpoint(model_ckpt, **kwargs).to(device).eval()
     else:
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_ckpt, return_dict=True, use_safetensors=True).to(device).eval()
+        try:
+            # Try to use .safetensors
+            model = AutoModelForSeq2SeqLM.from_pretrained(
+                model_ckpt, 
+                return_dict=True, 
+                use_safetensors=True
+            ).to(device).eval()
+        except (OSError, ValueError):
+            # If .safetensor is not availble, use .bin
+            model = AutoModelForSeq2SeqLM.from_pretrained(
+                model_ckpt, 
+                return_dict=True, 
+                use_safetensors=False
+            ).to(device).eval()
+        
         tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
     
     # unpack model and accompanying components
@@ -56,6 +72,19 @@ def load_model(model_ckpt, tokenizer=None, device="cuda", **kwargs):
 
     return model, tokenizer, hparams
 
+def convert_graph_string(input_string):
+    pattern = re.compile(r'<S> (.*?) <P> (.*?) <O> (.*?)($|\n)', re.DOTALL)
+
+    result = []
+    for match in pattern.findall(input_string):
+        subject = match[0].replace(" ", "_")
+        predicate = to_camel(match[1])
+        obj = match[2].replace(" ", "_")
+        if ',' in obj or ' ' in obj:  # Add "" if comma or space in the object
+            obj = f'"{obj}"'
+        result.append(f'{subject} | {predicate} | {obj}')
+    
+    return result
 
 def inference(model_ckpt, test_file, lang="en", out_file=None, training=False, batch_size=16, 
               max_batches=None, do_eval=False, metrics="bleu,chrf++,ter,bert", device="cuda", **kwargs):
@@ -96,13 +125,15 @@ def inference(model_ckpt, test_file, lang="en", out_file=None, training=False, b
 
     for i in range(len(out_texts)):
         data[i] += (out_texts[i],)
+    
     data_df = pd.DataFrame(data, columns=["input", "ref", "output"])
 
     if do_eval:
         num_refs = max([len(row.ref) for _, row in data_df.iterrows()])
         label_seqs = [[y[0] for y in ys] for ys in data_df["ref"]]
+        graphs = [convert_graph_string(graph) for graph in data_df["input"]]
         result = run_eval(refs_path=label_seqs, hyps_path=data_df["output"].tolist(), 
-                          lng=lang, num_refs=num_refs, metrics=metrics)
+                          graph_path=graphs, lng=lang, num_refs=num_refs, metrics=metrics)
         print_results(result, metrics=metrics, lng=lang)
 
         # save sentence-level scores to df

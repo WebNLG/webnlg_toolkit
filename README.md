@@ -130,6 +130,48 @@ model.save_model("my_new_model")
 ```
 
 ## Evaluation
+*update 22/08/2024*
+
+We have added 5 new metrics to the toolkit, offering a more comprehensive approach to evaluating WebNLG data. These new metrics include:
+
+- **Parent**: Reference-based, requires graph input.
+- **SEScore2**: Reference-based, evaluates errors.
+- **FactSpotter**: Reference-free, based on triple facts.
+- **Eredat+Cosine**: Reference-free, uses Eredat, a representation model for both graph and text.
+- **Data Quest-Eval**: Reference-free, based on question-answering.
+
+We have also updated **BLEURT** to the latest version (BLEURT-20) to ensure more accurate evaluations.
+
+Additionally, we continue to support the two evaluation methods as before.
+
+Example of Seq2seq model inference:
+```python
+>>> from webnlg_toolkit.utils.data import load_webnlg_dataset, load_webnlg_xml
+>>> from webnlg_toolkit.t5 import inference
+
+# import SEScore2 class in the main module
+>>> from webnlg_toolkit.eval.metrics.SEScore2.util.regression_xlm_roberta import Regression_XLM_Roberta
+
+>>> df = inference(
+        "OneFly7/lora-t5-base-KW-DQE-Q1-webnlg-r256-alpha32", 
+        test_file_path, 
+        lang="en", 
+        do_eval=True, 
+        out_file=out_csv_path,
+        metrics="parent,factspotter,dqe,eredat,sescore"
+    )
+
+  PARENT    EREDAT    FACTSPOTTER    SESCORE2    DATA QUEST-EVAL
+--------  --------  -------------  ----------  -----------------
+   0.654     0.883          0.948      -2.902              0.742
+```
+
+If you prefer to use the traditional method, the input graph should be stored in a text file, similar to the references. [Here](./webnlg_toolkit/data/graph.txt) is an example of a text file for the WebNLG 2020 test graph. Additionally, we provide a script to generate such a graph text file:
+```python
+python webnlg_toolkit/data/create_graph_txt.py input.xml output.txt
+```
+
+---
 
 Seq2seq model inference and evaluation can be performed via the `inference()` function. Setting `eval=True` will automatically performed evaluation on the generated outputs.
 
@@ -179,10 +221,19 @@ We provide a number of basic [pretrained models](https://huggingface.co/webnlg) 
 * `ru-mt0base` - [mT0-base](https://huggingface.co/bigscience/mt0-base) fine-tuned on the WebNLG 2020/2023 Russian data.
 * `all-mt5base` - [mT5-base](https://huggingface.co/google/mt5-base) fine-tuned on the WebNLG 2020/2023 data for the full range of supported languages (en, ru, br, cy, ga, mt)
 * `all-mt5large` - [mT5-large](https://huggingface.co/google/mt5-large) fine-tuned on the WebNLG 2020/2023 data for the full range of supported languages (en, ru, br, cy, ga, mt)
+* `lora-webnlg-t5base` - [T5-base](https://huggingface.co/OneFly7/lora-t5-base-KW-DQE-Q1-webnlg-r256-alpha32) fine-tuned on the WebNLG 2020 and filtered KELM English data using stacked LoRA. 
 
 _Note: for cy, ga, and mt we use NLLB translations of the English training data instead of the automatic translations originally published in WebNLG 2023 as this is believed to be of higher quality. However, we use the original 2023 training data for br as it is not supported by NLLB._
 
 ### English
+*update 08/22/2024*
+|                 | BLEU   | METEOR | chrF++ | TER   | BERT F1 | BLEURT | PARENT | Eredat | FactS |  DQE  | SEScore2 |
+|-----------------|--------|--------|--------|-------|---------|--------|--------|--------|-------|-------|----------|
+| English T5-base | 52.569 | 0.409  | 0.680  | 0.411 | 0.956   | 0.797  | 0.647  | 0.884  | 0.931 | 0.739 | -3.024   |
+| LoRA WebNLG     | 53.714 | 0.412  | 0.686  | 0.403 | 0.9574  | 0.802  | 0.654  | 0.883  | 0.948 | 0.742 | -2.902   |
+
+---
+
 |                 | BLEU   | chrF++ | TER   | BERT Prec. | BERT Rec. | BERT F1 |
 |-----------------|--------|--------|-------|------------|-----------|---------|
 | English T5-base | 52.569 | 0.680  | 0.411 | 0.958      | 0.955     | 0.956   |
