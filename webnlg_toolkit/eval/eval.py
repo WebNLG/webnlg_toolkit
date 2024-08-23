@@ -54,8 +54,8 @@ from razdel import tokenize
 from bert_score import score
 from tabulate import tabulate
 from sacrebleu.metrics import BLEU
-from parent import parent
 
+from webnlg_toolkit.eval.metrics.parent import parent
 from webnlg_toolkit.eval.metrics.chrF import computeChrF
 from webnlg_toolkit.eval.metrics.bleurt.bleurt import score as bleurt_score
 from webnlg_toolkit.eval.metrics.SEScore2.SEScore2 import *

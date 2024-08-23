@@ -6,6 +6,20 @@ This repo is intended to provide common utilities for WebNLG-related tasks. This
 pip install -e .
 ```
 
+*update 22/08/2024*
+
+To incorporate additional metrics, we have updated and unified several Python libraries. We recommend managing the environment using **Poetry**, which allows you to easily set up the project starting from the *pyproject.toml* file.
+
+There are some metrics that still need to be downloaded manually, please follow the instructions below to run the bash file.
+```bash
+cd webnlg_toolkit/eval
+bash install_dependencies.sh
+```
+
+If you have already set up Poetry and installed the relevant metric dependencies using the bash script below, please run the following commands:
+```bash
+```
+
 ## Loading WebNLG Data
 
 WebNLG XML datasets can be automatically loaded into python using utility functions. 
@@ -141,12 +155,6 @@ We have added 5 new metrics to the toolkit, offering a more comprehensive approa
 - **Data Quest-Eval**: Reference-free, based on question-answering.
 
 We have also updated **BLEURT** to the latest version (BLEURT-20) to ensure more accurate evaluations.
-
-There are some metrics that still need to be downloaded manually, please follow the instructions below to run the bash file.
-```bash
-cd webnlg_toolkit/eval
-bash install_dependencies.sh
-```
 
 Additionally, we continue to support the two evaluation methods as before.
 
