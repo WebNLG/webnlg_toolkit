@@ -159,7 +159,6 @@ Additionally, we continue to support the two evaluation methods as before.
 
 Example of Seq2seq model inference:
 ```python
->>> from webnlg_toolkit.utils.data import load_webnlg_dataset, load_webnlg_xml
 >>> from webnlg_toolkit.t5 import inference
 
 # import SEScore2 class in the main module
