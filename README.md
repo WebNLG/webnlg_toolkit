@@ -10,14 +10,13 @@ pip install -e .
 
 To incorporate additional metrics, we have updated and unified several Python libraries. We recommend managing the environment using **Poetry**, which allows you to easily set up the project starting from the *pyproject.toml* file.
 
-There are some metrics that still need to be downloaded manually, please follow the instructions below to run the bash file.
+If Poetry is ready, you can easily run the setup bash file to finalize your environmental configuration.
 ```bash
-cd webnlg_toolkit/eval
-bash install_dependencies.sh
-```
+# If you don't have poetry
+pipx install poetry
 
-If you have already set up Poetry and installed the relevant metric dependencies using the bash script below, please run the following commands:
-```bash
+# Run setup bash
+bash setup.sh
 ```
 
 ## Loading WebNLG Data
