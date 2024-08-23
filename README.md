@@ -16,7 +16,7 @@ If Poetry is ready, you can easily run the setup bash file to finalize your envi
 pipx install poetry
 
 # Run setup bash
-bash setup.sh
+bash poetry_setup.sh
 ```
 
 ## Loading WebNLG Data
