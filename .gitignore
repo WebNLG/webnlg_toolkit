@@ -160,6 +160,9 @@ dev_src/
 webnlg_toolkit/eval/metrics/bleurt/
 webnlg_toolkit/eval/metrics/meteor-1.5/
 
+# WebNLG Correlation Toolkit
+webnlg_correlation_toolkit/script/
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
