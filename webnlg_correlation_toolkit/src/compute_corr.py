@@ -113,9 +113,11 @@ def print_results(metric_results, metrics, human_metrics):
     team_names = metric_results.keys()
     headers_sys, headers_sent, system_scores, sent_scores = [], [], [], []
 
+    headers_sys.extend(["System Level Correlation"])
+    headers_sent.extend(["Sentence Level Correlation"])
+
     metrics = metrics.lower().split(',')
     if 'bleu' in metrics:
-        system_corr_bleu = {}
         results = {}
     
         for hm in human_metrics:
@@ -137,8 +139,8 @@ def print_results(metric_results, metrics, human_metrics):
             results[hm, 'system_level'] = pearsonr(sys_bleus, sys_human_scores)[0]
 
         # Draw tabualte
-        headers_sys.extend(["System Level Correlation", "BLEU"])
-        headers_sent.extend(["Sentence Level Correlation", "BLEU"])
+        headers_sys.extend(["BLEU"])
+        headers_sent.extend(["BLEU"])
         for hm in human_metrics:
             system_scores.append((hm, round(results[hm, 'system_level'], 3)))
             sent_scores.append((hm, round(results[hm, 'sent_level'], 3)))
@@ -146,7 +148,123 @@ def print_results(metric_results, metrics, human_metrics):
         # print(tabulate(system_scores, headers=headers_sys, tablefmt='grid'))
         # print(tabulate(sent_scores, headers=headers_sent, tablefmt='grid'))
 
-    # if 'meteor' in metrics:
+    if 'eredat' in metrics:
+        results = {}
+    
+        for hm in human_metrics:
+            sent_eredat = []
+            sent_human_scores = []
+            sys_eredat = []
+            sys_human_scores = []
+            for team in team_names:
+                # Compute system level correlation
+                avg_team_score = metric_results[team]['eredat'].mean()
+                avg_hm_score = sum(metric_results[team][hm]) / len(metric_results[team][hm])
+                sys_eredat.append(avg_team_score)
+                sys_human_scores.append(avg_hm_score)
+                # Compute sentence level correlation
+                sent_eredat.extend(metric_results[team]['eredat'].tolist())
+                sent_human_scores.extend(metric_results[team][hm])
+            
+            results[hm, 'sent_level'] = pearsonr(sent_eredat, sent_human_scores)[0]
+            results[hm, 'system_level'] = pearsonr(sys_eredat, sys_human_scores)[0]
+
+        # Draw tabualte
+        headers_sys.extend(["EREDAT"])
+        headers_sent.extend(["EREDAT"])
+        for hm in human_metrics:
+            # Check if this human metric already in the table
+            exist = False
+            for i, pair in enumerate(system_scores):
+                if pair[0] == hm:
+                    exist = True
+                    # Add new element
+                    system_scores[i] = pair + (round(results[hm, 'system_level'], 3),)
+                    sent_scores[i] = sent_scores[i] + (round(results[hm, 'sent_level'], 3),)
+            
+            if not exist:
+                system_scores.append((hm, round(results[hm, 'system_level'], 3)))
+                sent_scores.append((hm, round(results[hm, 'sent_level'], 3)))
+
+    if 'factspotter' in metrics:
+        results = {}
+    
+        for hm in human_metrics:
+            sent_fs = []
+            sent_human_scores = []
+            sys_fs = []
+            sys_human_scores = []
+            for team in team_names:
+                # Compute system level correlation
+                avg_team_score = sum(metric_results[team]['factspotter'])/len(metric_results[team]['factspotter'])
+                avg_hm_score = sum(metric_results[team][hm]) / len(metric_results[team][hm])
+                sys_fs.append(avg_team_score)
+                sys_human_scores.append(avg_hm_score)
+                # Compute sentence level correlation
+                sent_fs.extend(metric_results[team]['factspotter'])
+                sent_human_scores.extend(metric_results[team][hm])
+            
+            results[hm, 'sent_level'] = pearsonr(sent_fs, sent_human_scores)[0]
+            results[hm, 'system_level'] = pearsonr(sys_fs, sys_human_scores)[0]
+
+        # Draw tabualte
+        headers_sys.extend(["FACTSPOTTER"])
+        headers_sent.extend(["FACTSPOTTER"])
+        for hm in human_metrics:
+            # Check if this human metric already in the table
+            exist = False
+            for i, pair in enumerate(system_scores):
+                if pair[0] == hm:
+                    exist = True
+                    # Add new element
+                    system_scores[i] = pair + (round(results[hm, 'system_level'], 3),)
+                    sent_scores[i] = sent_scores[i] + (round(results[hm, 'sent_level'], 3),)
+            
+            if not exist:
+                system_scores.append((hm, round(results[hm, 'system_level'], 3)))
+                sent_scores.append((hm, round(results[hm, 'sent_level'], 3)))
+
+    if 'dqe' in metrics:
+        results = {}
+    
+        for hm in human_metrics:
+            sent_dqe = []
+            sent_human_scores = []
+            sys_dqe = []
+            sys_human_scores = []
+            for team in team_names:
+                # Compute system level correlation
+                avg_team_score = metric_results[team]['dqe']['corpus_score'].mean()
+                avg_hm_score = sum(metric_results[team][hm]) / len(metric_results[team][hm])
+                sys_dqe.append(avg_team_score)
+                sys_human_scores.append(avg_hm_score)
+                # Compute sentence level correlation
+                sent_dqe.extend(metric_results[team]['dqe']['ex_level_scores'])
+                sent_human_scores.extend(metric_results[team][hm])
+            
+            results[hm, 'sent_level'] = pearsonr(sent_dqe, sent_human_scores)[0]
+            results[hm, 'system_level'] = pearsonr(sys_dqe, sys_human_scores)[0]
+
+        # Draw tabualte
+        headers_sys.extend(["DATA QUEST-EVAL"])
+        headers_sent.extend(["DATA QUEST-EVAL"])
+        for hm in human_metrics:
+            # Check if this human metric already in the table
+            exist = False
+            for i, pair in enumerate(system_scores):
+                if pair[0] == hm:
+                    exist = True
+                    # Add new element
+                    system_scores[i] = pair + (round(results[hm, 'system_level'], 3),)
+                    sent_scores[i] = sent_scores[i] + (round(results[hm, 'sent_level'], 3),)
+            
+            if not exist:
+                system_scores.append((hm, round(results[hm, 'system_level'], 3)))
+                sent_scores.append((hm, round(results[hm, 'sent_level'], 3)))
+
+    # Table visualization
+    print(tabulate(system_scores, headers=headers_sys, tablefmt='grid'))
+    print(tabulate(sent_scores, headers=headers_sent, tablefmt='grid'))
 
 
 def main():

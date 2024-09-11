@@ -392,7 +392,7 @@ def eredat(hypothesis, graphs):
     gc.collect()
     torch.cuda.empty_cache()
 
-    return cosine_scores.mean()
+    return cosine_scores
 
 def factspotter(hypothesis, graphs):
     def _text(text):
@@ -477,7 +477,7 @@ def factspotter(hypothesis, graphs):
     gc.collect()
     torch.cuda.empty_cache()
 
-    return sum(factscore) / len(factscore)
+    return factscore
 
 def sescore2(references, hypothesis, batch_size=16, path=SESCORE2_PATH):
     # Add SEScocre2 directory into the working repo
@@ -573,7 +573,7 @@ def DQE(hypothesis, graphs, path='webnlg_toolkit/eval/metrics/DQE'):
     gc.collect()
     torch.cuda.empty_cache()
     
-    return scores['corpus_score']
+    return scores
 
 
 def run(refs_path, hyps_path, graph_path, num_refs, lng='en', metrics='bleu,meteor,chrf++,ter,bert,bleurt,eredat,factspotter,parent,dqe,sescore', ncorder=6, nworder=2, beta=2):
@@ -663,16 +663,19 @@ def print_results(result, metrics, lng='en'):
         values.append(round(result['parent'], 3))
     if 'eredat' in metrics:
         headers.append('EREDAT')
-        values.append(round(result['eredat'], 3))
+        eredat_score = result['eredat'].mean()
+        values.append(round(eredat_score, 3))
     if 'factspotter' in metrics:
         headers.append('FACTSPOTTER')
-        values.append(round(result['factspotter'], 3))
+        fs = sum(result['factspotter']) / len(result['factspotter'])
+        values.append(round(fs, 3))
     if 'sescore' in metrics:
         headers.append('SESCORE2')
         values.append(round(result['sescore2'], 3))
     if 'dqe' in metrics:
         headers.append('DATA QUEST-EVAL')
-        values.append(round(result['dqe'], 3))
+        dqe_system_score = result['dqe']['corpus_score']
+        values.append(round(dqe_system_score, 3))
 
     logging.info('PRINTING RESULTS...')
     print(tabulate([values], headers=headers))
